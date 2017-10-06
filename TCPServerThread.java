@@ -3,54 +3,59 @@ import java.net.*;
 import java.util.*;
 
 public class TCPServerThread implements Runnable {
-    private OrderTable orderTable;
-    private Inventory inventory;
-    private Socket clientSocket;
-    public TCPServerThread(OrderTable orderTable, Inventory inventory, Socket socket) {
-        this.inventory = inventory;
-        this.orderTable = orderTable;
-        this.clientSocket = socket;
-    }
+	private ArrayList<ServerInformation> listOfOtherServers;
+	private SeatInventory seatList;
+	private Socket clientSocket;
+	private int myID;
 
-    @Override
-    public void run() {
-        //System.out.println("TCPServerThread started.");
+	public TCPServerThread(int myID, ArrayList<ServerInformation> listOfOtherServers, SeatInventory seatList,
+			Socket socket) {
+		this.myID = myID;
+		this.listOfOtherServers = listOfOtherServers;
+		this.seatList = seatList;
+		this.clientSocket = socket;
+	}
 
-        try (Scanner sc = new Scanner(this.clientSocket.getInputStream());) {
-            PrintWriter pout = new PrintWriter(this.clientSocket.getOutputStream());
+	@Override
+	public void run() {
+		System.out.println("TCPServerThread started.");
+		try (Scanner sc = new Scanner(this.clientSocket.getInputStream());) {
+			PrintWriter pout = new PrintWriter(this.clientSocket.getOutputStream());
 
-            if (sc.hasNext()) {
-                String[] bufferArray = sc.nextLine().split(" ");
-                String response;
+			if (sc.hasNext()) {
+				String[] bufferArray = sc.nextLine().split(" ");
+				String response = "";
+				if (bufferArray.length > 1) {
+					switch (bufferArray[0]) {
+					case "reserve":
+						response = seatList.ReserveSeat(bufferArray[1]);
+						break;
+					case "bookSeat":
+						response = seatList.ReserveThatSeat(bufferArray[1], Integer.parseInt(bufferArray[2]));
+						break;
+					case "search":
+						response = seatList.SearchPerson(bufferArray[1]);
+						break;
+					case "delete":
+						response = seatList.RemoveReservation(bufferArray[1]);
+						break;
+					default:
+						response = "ERROR: No such command";
+						break;
+					}
+				} else if(bufferArray[0].trim().equalsIgnoreCase("status")) {
+					response = seatList.getStatus();
+				}
+				else {
+					response = "Bad Request";
+				}
+				pout.println(response);
+				pout.flush();
+			}
 
-                switch (bufferArray[0]) {
-                    case "list":
-                        response = this.inventory.list();
-                        break;
-                    case "purchase":
-                        response = this.orderTable.purchase(bufferArray[1], bufferArray[2], Integer.parseInt(bufferArray[3]), this.inventory);
-                        break;
-                    case "search":
-                        response = this.orderTable.search(bufferArray[1]);
-                        break;
-                    case "cancel":
-                        response = this.orderTable.cancel(Integer.parseInt(bufferArray[1]), this.inventory);
-                        break;
-                    case "listorders": //temp feature for testing
-                        response = this.orderTable.search(null);
-                        break;
-                    default:
-                        response = "ERROR: No such command";
-                        break;
-                }
-
-                pout.println(response);
-                pout.flush();
-            }
-
-        } catch (IOException e) {
-            System.err.println(e);
-        }
-        //System.out.println("TCPServerThread stopped.");
-    }
+		} catch (IOException e) {
+			System.err.println(e);
+		}
+		System.out.println("TCPServerThread stopped.");
+	}
 }
