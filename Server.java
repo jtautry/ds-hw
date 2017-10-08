@@ -1,10 +1,8 @@
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.regex.Pattern;
 
 public class Server {
 	public static void main(String[] args) {
-
 		Scanner sc = new Scanner(System.in);
 		System.out.println("ID?");
 		int myID = sc.nextInt();
@@ -24,9 +22,7 @@ public class Server {
 				listOfServers.add(serverObj);
 				System.out.println("Server " + i + " is " + serverObj.toString());
 			}
-
 		}
-
 		Runnable tcpServer = new TCPServer(myID, listOfServers, inventory);
 		new Thread(tcpServer).start();
 	}

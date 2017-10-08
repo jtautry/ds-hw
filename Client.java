@@ -12,9 +12,8 @@ public class Client {
 
 		Scanner sc = new Scanner(System.in);
 		ArrayList<ServerInformation> listOfServers = new ArrayList<ServerInformation>();
-
+		
 		int numServer = sc.nextInt();
-
 		System.out.println("Server count " + numServer);
 
 		while (listOfServers.size() < numServer) {
@@ -25,12 +24,9 @@ public class Client {
 					ServerInformation serverObj = new ServerInformation(partsOfServerAddress[0],
 							Integer.parseInt(partsOfServerAddress[1]));
 					listOfServers.add(serverObj);
-
 					System.out.println("Server " + listOfServers.size() + " is " + serverObj.toString());
-
 				} else {
 					System.out.println("Try again");
-
 				}
 			}
 		}
@@ -42,17 +38,16 @@ public class Client {
 			if (tokens[0].equals("reserve") && tokens.length == 2) {
 
 				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					Socket socket;
 					try {
-						Socket socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
+						socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
 								listOfServers.get(serverNumber).getPortAddress());
 						socket.setSoTimeout(100);
 						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-						// send command
+						
 						out.println("reserve " + tokens[1]);
 
-						// receive response
 						String line;
 						while ((line = in.readLine()) != null) {
 							System.out.println(line);
@@ -145,7 +140,8 @@ public class Client {
 					}
 				}
 				// TODO: Get Rid of this after it's working
-			} else if (tokens[0].equals("status")) {
+			} 
+			else if (tokens[0].equals("status")) {
 				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
 					try {
 						Socket socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
@@ -169,12 +165,14 @@ public class Client {
 						System.out.println("Something Bad Happened");
 					}
 				}
-			} else if (tokens[0].equals("servers")) {
+			}
+			else if (tokens[0].equals("servers")) {
 				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
 					System.out.println("Server " + serverNumber + " is " + listOfServers.get(serverNumber).toString());
 
 				}
-			} else {
+			}
+			else {
 				System.out.println("ERROR: No such command");
 			}
 		}

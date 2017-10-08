@@ -23,7 +23,7 @@ public class SeatInformation {
 
 	public String getStatus() {
 
-		return _seat + " : " + _person;
+		return _seat + ":" + _person;
 
 	}
 }

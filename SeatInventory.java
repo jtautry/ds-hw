@@ -93,9 +93,9 @@ public class SeatInventory {
 	}
 
 	public String getStatus() {
-		String str = "";
+		String str = "Sync ";
 		for (int i = 0; i < _listOfSeats.size(); i++) {
-			str = str + _listOfSeats.get(i).getStatus()+"\n";
+			str = str + _listOfSeats.get(i).getStatus() + "\n";
 		}
 		return str;
 	}
