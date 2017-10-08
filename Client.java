@@ -1,116 +1,181 @@
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.*;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Client {
-    public static void main (String[] args) {
-        String hostAddress;
-        int tcpPort;
-        int udpPort;
-        String mode = "T";
 
-        if (args.length != 3) {
-            System.out.println("ERROR: Provide 3 arguments");
-            System.out.println("\t(1) <hostAddress>: the address of the server");
-            System.out.println("\t(2) <tcpPort>: the port number for TCP connection");
-            System.out.println("\t(3) <udpPort>: the port number for UDP connection");
-            System.exit(-1);
-        }
+	public static void main(String[] args) {
 
-        hostAddress = args[0];
-        tcpPort = Integer.parseInt(args[1]);
-        udpPort = Integer.parseInt(args[2]);
+		Scanner sc = new Scanner(System.in);
+		ArrayList<ServerInformation> listOfServers = new ArrayList<ServerInformation>();
+		
+		int numServer = sc.nextInt();
+		System.out.println("Server count " + numServer);
 
-        Scanner sc = new Scanner(System.in);
-        while(sc.hasNextLine()) {
-            String cmd = sc.nextLine();
-            String[] tokens = cmd.split(" ");
+		while (listOfServers.size() < numServer) {
+			String serverInfo = sc.nextLine();
+			if (!serverInfo.isEmpty()) {
+				String[] partsOfServerAddress = serverInfo.split(":");
+				if (partsOfServerAddress.length == 2) {
+					ServerInformation serverObj = new ServerInformation(partsOfServerAddress[0],
+							Integer.parseInt(partsOfServerAddress[1]));
+					listOfServers.add(serverObj);
+					System.out.println("Server " + listOfServers.size() + " is " + serverObj.toString());
+				} else {
+					System.out.println("Try again");
+				}
+			}
+		}
 
-            if (tokens[0].equals("setmode")) {
-                // set the mode of communication for sending commands to the server
-                // and display the name of the protocol that will be used in future
-                mode = tokens[1];
-                if (mode.equalsIgnoreCase("U")) {
-                    System.out.println("Mode: UDP");
-                } else {
-                    System.out.println("Mode: TCP");
-                }
-            // command interetation is handled by the server, this would be redundant
-            //else if (tokens[0].equals("purchase")) {}
-            //else if (tokens[0].equals("cancel")) {}
-            //else if (tokens[0].equals("search")) {}
-            //else if (tokens[0].equals("list")) {
+		while (sc.hasNextLine()) {
+			String cmd = sc.nextLine();
+			String[] tokens = cmd.split(" ");
 
-            } else if (tokens[0].equals("exit")) {
-                break;
+			if (tokens[0].equals("reserve") && tokens.length == 2) {
 
-            } else {
-                System.out.println((mode.equalsIgnoreCase("U")) ? SendUDPCommand(cmd, hostAddress, udpPort) : SendTCPCommand(cmd, hostAddress, tcpPort));
+				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					Socket socket;
+					try {
+						socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
+								listOfServers.get(serverNumber).getPortAddress());
+						socket.setSoTimeout(100);
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+						
+						out.println("reserve " + tokens[1]);
 
-                //this is handled by the server
-                //System.out.println("ERROR: No such command");
-            }
-        }
-    }
+						String line;
+						while ((line = in.readLine()) != null) {
+							System.out.println(line);
+						}
+						break;
+					} catch (SocketTimeoutException e) {
+						// listOfServers.remove(serverNumber);
+						continue;
+					} catch (Exception e) {
+						System.out.println("Something Bad Happened");
+					}
+				}
+			} else if (tokens[0].equals("bookSeat") && tokens.length == 3) {
 
-    private static String SendUDPCommand(String command, String hostAddress, int port) {
-        String response = "";
+				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					try {
+						Socket socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
+								listOfServers.get(serverNumber).getPortAddress());
+						socket.setSoTimeout(100);
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        try {
-            //open connection
-            InetAddress ia = InetAddress.getByName(hostAddress);
-            DatagramSocket datasocket = new DatagramSocket();
+						// send command
+						out.println("bookSeat " + tokens[1] + " " + tokens[2]);
 
-            //send command
-            byte[] buffer = new byte[command.length()];
-            buffer = command.getBytes();
-            DatagramPacket sPacket = new DatagramPacket(buffer, buffer.length, ia, port);
-            datasocket.send(sPacket);
+						// receive response
+						String line;
+						while ((line = in.readLine()) != null) {
+							System.out.println(line);
+						}
+						break;
+					} catch (SocketTimeoutException e) {
+						// listOfServers.remove(serverNumber);
+						continue;
+					} catch (Exception e) {
+						System.out.println("Something Bad Happened");
+					}
+				}
 
-            //receive response
-            byte[] rbuffer = new byte[1024]; //todo test this length by listing a large input file
-            DatagramPacket rPacket = new DatagramPacket(rbuffer, rbuffer.length);
-            datasocket.receive(rPacket);
+			} else if (tokens[0].equals("search") && tokens.length == 2) {
 
-            response = new String(rPacket.getData(), 0, rPacket.getLength());
+				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					try {
+						Socket socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
+								listOfServers.get(serverNumber).getPortAddress());
+						socket.setSoTimeout(100);
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        } catch (UnknownHostException e) {
-            System.err.println(e);
-        } catch (SocketException e) {
-            System.err.println(e);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+						// send command
+						out.println("search " + tokens[1]);
 
-        return response;
-    }
+						// receive response
+						String line;
+						while ((line = in.readLine()) != null) {
+							System.out.println(line);
+						}
+						break;
+					} catch (SocketTimeoutException e) {
+						// listOfServers.remove(serverNumber);
+						continue;
+					} catch (Exception e) {
+						System.out.println("Something Bad Happened");
+					}
+				}
+			} else if (tokens[0].equals("delete") && tokens.length == 2) {
 
-    private static String SendTCPCommand(String command, String hostAddress, int port) {
-        String response = "";
+				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					try {
+						Socket socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
+								listOfServers.get(serverNumber).getPortAddress());
+						socket.setSoTimeout(100);
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        try {
-            //setup the socket/stream resources
-            Socket socket = new Socket(hostAddress, port);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+						// send command
+						out.println("delete " + tokens[1]);
 
-            //send command
-            out.println(command);
+						// receive response
+						String line;
+						while ((line = in.readLine()) != null) {
+							System.out.println(line);
+						}
+						break;
+					} catch (SocketTimeoutException e) {
+						// listOfServers.remove(serverNumber);
+						continue;
+					} catch (Exception e) {
+						System.out.println("Something Bad Happened");
+					}
+				}
+				// TODO: Get Rid of this after it's working
+			} 
+			else if (tokens[0].equals("status")) {
+				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					try {
+						Socket socket = new Socket(listOfServers.get(serverNumber).getIpAddress(),
+								listOfServers.get(serverNumber).getPortAddress());
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            //receive response
-            String line;
-            while ((line = in.readLine()) != null) {
-                response += line + "\n";
-            }
+						// send command
+						out.println("status");
 
-        } catch (UnknownHostException e) {
-            System.err.println(e);
-        } catch (IOException e) {
-            System.err.println(e);
-        }
-        return response.trim();
-    }
+						// receive response
+						String line;
+						while ((line = in.readLine()) != null) {
+							System.out.println(line);
+						}
+						break;
+					} catch (SocketTimeoutException e) {
+						// listOfServers.remove(serverNumber);
+						continue;
+					} catch (Exception e) {
+						System.out.println("Something Bad Happened");
+					}
+				}
+			}
+			else if (tokens[0].equals("servers")) {
+				for (int serverNumber = 0; serverNumber < listOfServers.size(); serverNumber++) {
+					System.out.println("Server " + serverNumber + " is " + listOfServers.get(serverNumber).toString());
+
+				}
+			}
+			else {
+				System.out.println("ERROR: No such command");
+			}
+		}
+	}
+
 }
