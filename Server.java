@@ -15,13 +15,16 @@ import java.util.concurrent.Future;
 public class Server {
 	public static void main(String[] args) {
 		Scanner sc = new Scanner(System.in);
-		System.out.println("ID?");
+		//System.out.println("ID?");
 		int myID = sc.nextInt();
-		System.out.println("Number of Servers?");
+		//System.out.println("Number of Servers?");
 		int numServer = sc.nextInt();
-		System.out.println("Number of Seats");
+		//System.out.println("Number of Seats");
 		int numSeat = sc.nextInt();
-		ArrayList<ServerInformation> listOfServers = new ArrayList<ServerInformation>();
+
+        System.out.println(String.format("ID: %d, Servers: %d, Seats: %d", myID, numServer, numSeat));
+
+        ArrayList<ServerInformation> listOfServers = new ArrayList<ServerInformation>();
 		SeatInventory inventory = new SeatInventory(numSeat);
 		String serverInfo;
 		for (int i = 0; i < numServer
@@ -31,7 +34,7 @@ public class Server {
 				ServerInformation serverObj = new ServerInformation(partsOfServerAddress[0],
 						Integer.parseInt(partsOfServerAddress[1]));
 				listOfServers.add(serverObj);
-				System.out.println("Server " + i + " is " + serverObj.toString());
+				System.out.println(String.format("Server %d is %s", i+1, serverObj.toString()));
 			}
 		}
 
