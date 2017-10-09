@@ -1,0 +1,12 @@
+*.metadata
+**/bin
+*.classpath
+*.project
+*.settings
+*.pyc
+*.class
+
+# IntelliJ files
+**/.idea
+*.iml
+**/out
