@@ -7,98 +7,64 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class Server {
+	private static int _myID;
+	private static int _numServer;
+	private static int _numSeat;
+	private static ArrayList<ServerMetadata> _listOfServers;
+	private static SeatInventory _inventory;
+	private static ArrayList<ServerCommand> _serverQueue;
+	private static ServerSocket _serverSocket;
+
 	public static void main(String[] args) {
+		// Initialize Server
 		Scanner sc = new Scanner(System.in);
-		//System.out.println("ID?");
-		int myID = sc.nextInt();
-		//System.out.println("Number of Servers?");
-		int numServer = sc.nextInt();
-		//System.out.println("Number of Seats");
-		int numSeat = sc.nextInt();
+		initializeServer(sc);
 
-        System.out.println(String.format("ID: %d, Servers: %d, Seats: %d", myID, numServer, numSeat));
-
-        ArrayList<ServerInformation> listOfServers = new ArrayList<ServerInformation>();
-		SeatInventory inventory = new SeatInventory(numSeat);
-		String serverInfo;
-		for (int i = 0; i < numServer
-				&& (serverInfo = sc.next("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(:)\\d{1,5}")) != ""; i++) {
-			String[] partsOfServerAddress = serverInfo.split(":");
-			if (partsOfServerAddress.length == 2) {
-				ServerInformation serverObj = new ServerInformation(partsOfServerAddress[0],
-						Integer.parseInt(partsOfServerAddress[1]));
-				listOfServers.add(serverObj);
-				System.out.println(String.format("Server %d is %s", i+1, serverObj.toString()));
-			}
-		}
-
-		System.out.println("listening for tcp");
-		ServerSocket serverSocket = null;
-		ArrayList<ServerAction> serverQueue = new ArrayList<ServerAction>();
 		try {
 			while (true) {
-				serverSocket = new ServerSocket(listOfServers.get(myID - 1).getPortAddress());
-				Socket currentSocket = serverSocket.accept();
-				ObjectInputStream ois = new ObjectInputStream(currentSocket.getInputStream());
-				ServerAction otherAction = (ServerAction) ois.readObject();
-				//coming from client
-				if(otherAction.getServerId()==0 && otherAction.getAction()!=null) {
-					otherAction.setServerId(myID);
-					serverQueue.add(otherAction);
-					serverQueue.sort(new ServerActionComparator());
-					
-					Thread t = new Thread(new NotifyOtherServers(myID, listOfServers, otherAction));
-					t.start();
-					//coming from other server
-				}else {	
-					serverQueue.add(otherAction);
-					serverQueue.sort(new ServerActionComparator());
-					ServerAction timeStampAction = new ServerAction(new Date());
 
-					ObjectOutputStream oos = new ObjectOutputStream(currentSocket.getOutputStream());
-					oos.writeObject(timeStampAction);
-					oos.flush();
+				// creates Object Stream and reads the Command from the Socket
+				_serverSocket = new ServerSocket(_listOfServers.get(_myID - 1).getPortAddress());
+				Socket socket = _serverSocket.accept();
+				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+				ServerCommand otherAction = (ServerCommand) ois.readObject();
+
+				// coming from client
+				if (otherAction.getServerId() == 0 && otherAction.getAction() != null
+						&& otherAction.getTimeStamp() != null) {
+					// Set ownership Of the message
+					otherAction.setServerId(_myID);
+					addCommandToQueue(otherAction);
+					// notify other Servers of received Message
+					Thread t = new Thread(new SendCommandToOtherServers(_myID, _listOfServers, otherAction));
+					t.start();
+				// release message from server after completion of CS
+				} else if (otherAction.getServerId() != 0 && otherAction.getAction() != null
+						&& otherAction.getTimeStamp() == null) {
+					System.out.println(new Date().toString()+":Release received from Server "+ otherAction.toString());
+					_serverQueue.remove(0);
+				// coming from other server to tell others about command
+				} else {
+					System.out.println(new Date().toString()+":Command received from Server "+ otherAction.toString());
+					addCommandToQueue(otherAction);
+					// respond to Server with Timestamp
+					sendAcknowledgementToServer(socket);
 				}
-				//TODO count responses from the notify thread before execution
-				if(serverQueue.get(0).getServerId()==myID && serverQueue.get(0).equals(otherAction) ) {
-						String[] bufferArray = otherAction.getAction().split(" ");
-						String response = "";
-						if (bufferArray.length > 1) {
-							String actionFromBuffer = bufferArray[0].toLowerCase();
-							switch (actionFromBuffer) {
-							case "reserve":
-								response = inventory.ReserveSeat(bufferArray[1]);
-								break;
-							case "bookseat":
-								response = inventory.ReserveThatSeat(bufferArray[1], Integer.parseInt(bufferArray[2]));
-								break;
-							case "search":
-								response = inventory.SearchPerson(bufferArray[1]);
-								break;
-							case "delete":
-								response = inventory.RemoveReservation(bufferArray[1]);
-								break;
-							default:
-								response = "ERROR: No such command";
-								break;
-							}
-						}else {
-							response = "Bad Request";
-						} 
-						PrintWriter	pout = new PrintWriter(currentSocket.getOutputStream());
-						pout.println(response);
-						pout.flush();
-						serverQueue.remove(0);
-						//TODO remove item from other queues
-				    
+				// TODO count responses from the notify thread before execution
+				if (_serverQueue.size()>0 && _serverQueue.get(0).getServerId() == _myID) {
+					
+					System.out.println(new Date().toString()+":Entering Critical Section for :"+ otherAction.toString());
+					String response = executeCriticalSection(otherAction);
+					sendResponseToClient(socket, response);
+					_serverQueue.remove(0);
+					System.out.println(new Date().toString()+":Leaving Critical Section for :"+ otherAction.toString());
+
+					Thread t = new Thread(new SendReleaseToOtherServers(_myID, _listOfServers));
+					t.start();
 				}
-				serverSocket.close();
+				_serverSocket.close();
 			}
 		} catch (IOException | ClassNotFoundException e) {
 			System.err.println("Server aborted: " + e);
@@ -106,5 +72,110 @@ public class Server {
 		}
 
 	}
-	
+
+	/**
+	 * Initializes the Server with data from the input
+	 * 
+	 * @param sc
+	 */
+	private static void initializeServer(Scanner sc) {
+		// System.out.println("ID?");
+		_myID = sc.nextInt();
+		// System.out.println("Number of Servers?");
+		_numServer = sc.nextInt();
+		// System.out.println("Number of Seats");
+		_numSeat = sc.nextInt();
+
+		System.out.println(String.format("ID: %d, Servers: %d, Seats: %d", _myID, _numServer, _numSeat));
+
+		_listOfServers = new ArrayList<ServerMetadata>();
+		_inventory = new SeatInventory(_numSeat);
+		_serverQueue = new ArrayList<ServerCommand>();
+
+		String serverInfo;
+		for (int i = 0; i < _numServer
+				&& (serverInfo = sc.next("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(:)\\d{1,5}")) != ""; i++) {
+			String[] partsOfServerAddress = serverInfo.split(":");
+			if (partsOfServerAddress.length == 2) {
+				ServerMetadata serverObj = new ServerMetadata(partsOfServerAddress[0],
+						Integer.parseInt(partsOfServerAddress[1]));
+				_listOfServers.add(serverObj);
+				System.out.println(String.format("Server %d is %s", i + 1, serverObj.toString()));
+			}
+		}
+		System.out.println("listening for tcp");
+
+	}
+
+	/**
+	 * Adds command to ServerQueue
+	 * 
+	 * @param otherAction
+	 */
+	private static void addCommandToQueue(ServerCommand otherAction) {
+		_serverQueue.add(otherAction);
+		_serverQueue.sort(new ServerActionComparator());
+	}
+
+	/**
+	 * Sends timestamp as acknowledgement back to the requesting Server
+	 * 
+	 * @param socket
+	 * @throws IOException
+	 */
+	private static void sendAcknowledgementToServer(Socket socket) throws IOException {
+		ServerCommand timeStampAction = new ServerCommand(new Date());
+		ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+		oos.writeObject(timeStampAction);
+		oos.flush();
+	}
+
+	/**
+	 * Executes criticalSection commands
+	 * 
+	 * @param otherAction
+	 * @return response to Client
+	 */
+	private static String executeCriticalSection(ServerCommand otherAction) {
+		String[] bufferArray = otherAction.getAction().split(" ");
+		String response = "";
+		if (bufferArray.length > 1) {
+			String actionFromBuffer = bufferArray[0].toLowerCase();
+			switch (actionFromBuffer) {
+			case "reserve":
+				response = _inventory.ReserveSeat(bufferArray[1]);
+				break;
+			case "bookseat":
+				response = _inventory.ReserveThatSeat(bufferArray[1], Integer.parseInt(bufferArray[2]));
+				break;
+			case "search":
+				response = _inventory.SearchPerson(bufferArray[1]);
+				break;
+			case "delete":
+				response = _inventory.RemoveReservation(bufferArray[1]);
+				break;
+			default:
+				response = "ERROR: No such command";
+				break;
+			}
+		} else {
+			response = "Bad Request";
+		}
+		return response;
+	}
+
+	/**
+	 * 
+	 * Sends the response to the socketConnection
+	 * 
+	 * @param currentSocket
+	 * @param response
+	 * @throws IOException
+	 */
+	private static void sendResponseToClient(Socket socket, String response) throws IOException {
+		PrintWriter pout = new PrintWriter(socket.getOutputStream());
+		pout.println(response);
+		pout.flush();
+	}
+
 }

@@ -1,21 +1,44 @@
 import java.util.ArrayList;
 
+/**
+ * Creates the reservation system
+ *
+ */
 public class SeatInventory {
 
-	ArrayList<SeatInformation> _listOfSeats;
+	/**
+	 * List of seats that contains the name and seat number
+	 */
+	ArrayList<Reservation> _listOfSeats;
 
+	/**
+	 * Returns the seatList
+	 * 
+	 * @return Seat Inventory
+	 */
+	public ArrayList<Reservation> getSeatList() {
+		return _listOfSeats;
+	}
+
+	/**
+	 * Creates the seat inventory with the numbers of Seats from input
+	 * 
+	 * @param numberOfSeats
+	 */
 	public SeatInventory(int numberOfSeats) {
-		_listOfSeats = new ArrayList<SeatInformation>();
+		_listOfSeats = new ArrayList<Reservation>();
 		for (int i = 1; i <= numberOfSeats; i++) {
-			SeatInformation seat = new SeatInformation(i);
+			Reservation seat = new Reservation(i);
 			_listOfSeats.add(seat);
 		}
 	}
 
-	public ArrayList<SeatInformation> getSeatList() {
-		return _listOfSeats;
-	}
-
+	/**
+	 * Reserves a seat in the inventory and responses to the client
+	 * 
+	 * @param personName
+	 * @return String response for Client
+	 */
 	public String ReserveSeat(String personName) {
 		int openSeats = 0;
 		int firstOpenSeatIndex = -1;
@@ -44,6 +67,12 @@ public class SeatInventory {
 
 	}
 
+	/**
+	 * Reserves a particular seat in the inventory and responses to the client
+	 * 
+	 * @param personName
+	 * @return String response for Client
+	 */
 	public String ReserveThatSeat(String personName, int SeatNum) {
 		int openSeats = 0;
 		boolean isAlreadyBooked = false;
@@ -71,6 +100,12 @@ public class SeatInventory {
 
 	}
 
+	/**
+	 * Searches for a person in the inventory and responses to the client
+	 * 
+	 * @param personName
+	 * @return String response for Client
+	 */
 	public String SearchPerson(String personName) {
 		for (int i = 0; i < _listOfSeats.size(); i++) {
 			if (_listOfSeats.get(i).getPerson().equalsIgnoreCase(personName)) {
@@ -81,6 +116,12 @@ public class SeatInventory {
 
 	}
 
+	/**
+	 * Deletes a person in the inventory and responses to the client
+	 * 
+	 * @param personName
+	 * @return String response for Client
+	 */
 	public String RemoveReservation(String personName) {
 		for (int i = 0; i < _listOfSeats.size(); i++) {
 			if (_listOfSeats.get(i).getPerson().equalsIgnoreCase(personName)) {
@@ -91,11 +132,15 @@ public class SeatInventory {
 		return "No reservation found for " + personName;
 
 	}
-
+	/**
+	 * USED FOR DEBUGGING
+	 * 
+	 * @return String of Inventory
+	 */
 	public String getStatus() {
-		String str = "Sync ";
+		String str = "Sync :";
 		for (int i = 0; i < _listOfSeats.size(); i++) {
-			str = str + _listOfSeats.get(i).getStatus() + "\n";
+			str = str + _listOfSeats.get(i).getStatus() + ", ";
 		}
 		return str;
 	}
