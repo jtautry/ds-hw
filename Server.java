@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Scanner;
 
 public class Server {
@@ -16,6 +15,7 @@ public class Server {
 	private static SeatInventory _inventory;
 	private static ArrayList<ServerCommand> _serverQueue;
 	private static ServerSocket _serverSocket;
+	private static LamportClock _clock;
 
 	public static void main(String[] args) {
 		// Initialize Server
@@ -27,41 +27,72 @@ public class Server {
 
 				// creates Object Stream and reads the Command from the Socket
 				_serverSocket = new ServerSocket(_listOfServers.get(_myID - 1).getPortAddress());
+
 				Socket socket = _serverSocket.accept();
 				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
 				ServerCommand otherAction = (ServerCommand) ois.readObject();
 
-				// coming from client
-				if (otherAction.getServerId() == 0 && otherAction.getAction() != null
-						&& otherAction.getTimeStamp() != null) {
+				switch (otherAction.getMessageType()) {
+
+				// Received Message from Client
+				case clientMessage:
 					// Set ownership Of the message
 					otherAction.setServerId(_myID);
+					_clock.sendMessageAction();
+					otherAction.getClock().setTimestamp(_clock.getTimestamp());
+					otherAction.setMessageType( ServerCommandType.notifyMessage);
+
 					addCommandToQueue(otherAction);
 					// notify other Servers of received Message
-					Thread t = new Thread(new SendCommandToOtherServers(_myID, _listOfServers, otherAction));
+					Thread t = new Thread(new SendCommandToOtherServers(_myID, otherAction,_listOfServers));
 					t.start();
-				// release message from server after completion of CS
-				} else if (otherAction.getServerId() != 0 && otherAction.getAction() != null
-						&& otherAction.getTimeStamp() == null) {
-					System.out.println(new Date().toString()+":Release received from Server "+ otherAction.toString());
-					_serverQueue.remove(0);
-				// coming from other server to tell others about command
-				} else {
-					System.out.println(new Date().toString()+":Command received from Server "+ otherAction.toString());
+					break;
+
+				// Received a TimeStamp Message from other Server
+				case acknowledgementMessage:
+					_clock.receiveMessageAction(otherAction.getClock());
+					System.out.println(
+							_clock.toString() 
+							+ ":Acknowledgement received from Server " + otherAction.toString());
+					break;
+
+				// Received a ServerCommand Message from other Server
+				case notifyMessage:
+					System.out
+							.println(_clock.toString() 
+									+ ":Command received from Server " + otherAction.toString());
+					_clock.receiveMessageAction(otherAction.getClock());
 					addCommandToQueue(otherAction);
 					// respond to Server with Timestamp
 					sendAcknowledgementToServer(socket);
+					break;
+
+				// Received a Release Message from THE Server
+				case releaseMessage:
+					_clock.receiveMessageAction(otherAction.getClock());
+					System.out
+							.println(_clock.toString() 
+									+ ":Release received from Server " + otherAction.toString());
+					_serverQueue.remove(0);
+					break;
+				default:
+					break;
+
 				}
+
+
 				// TODO count responses from the notify thread before execution
-				if (_serverQueue.size()>0 && _serverQueue.get(0).getServerId() == _myID) {
-					
-					System.out.println(new Date().toString()+":Entering Critical Section for :"+ otherAction.toString());
+				if (_serverQueue.size() > 0 && _serverQueue.get(0).getServerId() == _myID) {
+
+					System.out.println(
+							_clock.toString() + ":Entering Critical Section for :" + otherAction.toString());
 					String response = executeCriticalSection(otherAction);
 					sendResponseToClient(socket, response);
 					_serverQueue.remove(0);
-					System.out.println(new Date().toString()+":Leaving Critical Section for :"+ otherAction.toString());
+					System.out.println(
+							_clock.toString() + ":Leaving Critical Section for :" + otherAction.toString());
 
-					Thread t = new Thread(new SendReleaseToOtherServers(_myID, _listOfServers));
+					Thread t = new Thread(new SendReleaseToOtherServers(_myID,_clock, _listOfServers));
 					t.start();
 				}
 				_serverSocket.close();
@@ -91,6 +122,7 @@ public class Server {
 		_listOfServers = new ArrayList<ServerMetadata>();
 		_inventory = new SeatInventory(_numSeat);
 		_serverQueue = new ArrayList<ServerCommand>();
+		_clock = new LamportClock();
 
 		String serverInfo;
 		for (int i = 0; i < _numServer
@@ -124,7 +156,8 @@ public class Server {
 	 * @throws IOException
 	 */
 	private static void sendAcknowledgementToServer(Socket socket) throws IOException {
-		ServerCommand timeStampAction = new ServerCommand(new Date());
+		_clock.sendMessageAction();
+		ServerCommand timeStampAction = new ServerCommand("ack",_clock, ServerCommandType.acknowledgementMessage, _myID);
 		ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 		oos.writeObject(timeStampAction);
 		oos.flush();

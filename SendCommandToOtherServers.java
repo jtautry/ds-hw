@@ -17,7 +17,7 @@ public class SendCommandToOtherServers implements Runnable {
 	 * @param listOfOtherServers
 	 * @param action
 	 */
-	public SendCommandToOtherServers(int myID, ArrayList<ServerMetadata> listOfOtherServers, ServerCommand action) {
+	public SendCommandToOtherServers(int myID, ServerCommand action, ArrayList<ServerMetadata> listOfOtherServers) {
 		_myID = myID;
 		_listOfOtherServers = listOfOtherServers;
 		_action = action;
@@ -43,8 +43,8 @@ public class SendCommandToOtherServers implements Runnable {
 					oos.flush();
 					// receive acknowledgement from other servers
 					ObjectInputStream ois = new ObjectInputStream(newSocket.getInputStream());
-					ServerCommand acknowledgements = (ServerCommand) ois.readObject();
-					if (acknowledgements.getTimeStamp() != null) {
+					ServerCommand acknowledgement = (ServerCommand) ois.readObject();
+					if (acknowledgement.getMessageType() == ServerCommandType.acknowledgementMessage) {
 						acknowledgementsFromServer++;
 					}
 
@@ -61,7 +61,7 @@ public class SendCommandToOtherServers implements Runnable {
 				}
 			}
 		}
-
+		_action.setAcknowledgements(acknowledgementsFromServer);
 		// TODO: Count acknowledgements
 		// while(acknowledgementsFromServer!=_listOfOtherServers.size()) {
 		//

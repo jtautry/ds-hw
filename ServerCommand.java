@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * Class representing a command that is sent from Client to Server and Server to
@@ -16,7 +15,7 @@ public class ServerCommand implements Serializable {
 	/**
 	 * TimeStamp of the Server Command
 	 */
-	private Date _timeStamp = null;
+	private LamportClock _clock = null;
 	/**
 	 * Action to be performed by the Server
 	 */
@@ -25,12 +24,30 @@ public class ServerCommand implements Serializable {
 	 * ID of the Server that owes this Action
 	 */
 	private int _serverId = 0;
+	
+	private int _acknowledgements =1;
+	
+	private ServerCommandType _messageType;
+
+	/**
+	 * @return the _messageType
+	 */
+	public ServerCommandType getMessageType() {
+		return _messageType;
+	}
+
+	/**
+	 * @param _messageType the _messageType to set
+	 */
+	public void setMessageType(ServerCommandType _messageType) {
+		this._messageType = _messageType;
+	}
 
 	/**
 	 * Returns the TimeStamp
 	 */
-	public Date getTimeStamp() {
-		return _timeStamp;
+	public LamportClock getClock() {
+		return _clock;
 	}
 
 	/**
@@ -55,24 +72,25 @@ public class ServerCommand implements Serializable {
 	public void setServerId(int id) {
 		_serverId = id;
 	}
+	/**
+	 * returns the acknowledgements for serverCommand
+	 */
+	public int getAcknowledgements() {
+		return _acknowledgements;
+	}
+	/**
+	 * sets the acknowledgements for serverCommand
+	 * @param acknowledgements
+	 */
+	public void setAcknowledgements(int acknowledgements) {
+		this._acknowledgements = acknowledgements;
+	}
 
 	/**
 	 * Creates a empty ServerCommand with defaults of action="", serverID =0
 	 */
 	public ServerCommand() {
 
-	}
-
-	/**
-	 * Creates a ServerCommand with only a timestamp
-	 * 
-	 * This is used when as the server response to the another Servers request.
-	 * 
-	 * 
-	 * @param timestamp
-	 */
-	public ServerCommand(Date timestamp) {
-		_timeStamp = timestamp;
 	}
 
 	/**
@@ -83,37 +101,26 @@ public class ServerCommand implements Serializable {
 	 * @param timestamp
 	 * @param action
 	 */
-	public ServerCommand(Date timestamp, String action) {
-		_timeStamp = timestamp;
+	public ServerCommand(String action ) {
 		_action = action;
+		_messageType = ServerCommandType.clientMessage;
+		_clock = new LamportClock();
 	}
 
 	/**
 	 * Creates a ServerCommand
 	 * 
-	 * this is used when the server notifies other servers of the command
+	 * this is used for server to server communications
 	 * 
 	 * @param serverId
 	 * @param timestamp
 	 * @param action
 	 */
-	public ServerCommand(int serverId, Date timestamp, String action) {
-		_serverId = serverId;
-		_timeStamp = timestamp;
+	public ServerCommand(String action, LamportClock timestamp, ServerCommandType messageType, int serverId) {
+		_clock = timestamp;
 		_action = action;
-	}
-
-	/**
-	 * Creates a ServerCommand
-	 * 
-	 * this is used when the server releases other servers
-	 * 
-	 * @param serverId
-	 * @param action
-	 */
-	public ServerCommand(int serverId, String action) {
 		_serverId = serverId;
-		_action = action;
+		_messageType = messageType;
 	}
 
 	/*
@@ -122,7 +129,7 @@ public class ServerCommand implements Serializable {
 	@Override
 	public boolean equals(Object o) {
 		ServerCommand c = (ServerCommand) o;
-		if (this._action == c._action && this._timeStamp == c._timeStamp) {
+		if (this._action == c._action && this._clock == c._clock) {
 			return true;
 		}
 		return false;
@@ -135,13 +142,13 @@ public class ServerCommand implements Serializable {
 	public int hashCode() {
 		int hash = 3;
 		hash = 53 * hash + (this._action != null ? this._action.hashCode() : 0);
-		hash = 53 * hash + (this._timeStamp != null ? this._timeStamp.hashCode() : 0);
+		hash = 53 * hash + (this._clock != null ? this._clock.hashCode() : 0);
 		return hash;
 	}
 
 	@Override
 	public String toString() {
-		String str = "Timestamp:" + (this._timeStamp != null ? this._timeStamp.toString() : "No TimeStamp");
+		String str = "Timestamp:" + (this._clock != null ? this._clock.toString() : "No TimeStamp");
 		str += "-Action:" + (this._action != null ? this._action.toString() : "No Action");
 		str += "-Server:" + (this._serverId != 0 ? this._serverId : "No Server ID");
 		return str;
