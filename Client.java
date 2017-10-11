@@ -109,7 +109,7 @@ public class Client {
 				// Reads the response from the Server and displays it
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				String line;
-				while ((line = in.readLine().toString()) != null) {
+				if ((line = in.readLine().toString()) != null) {
 					System.out.println(line);
 				}
 				// close socket connection
@@ -122,7 +122,7 @@ public class Client {
 				// _listOfServers.remove(serverNumber);
 				continue;
 			} catch (Exception e) {
-				System.out.println(e.getMessage());
+				System.err.println(e.getMessage());
 			}
 		}
 	}
