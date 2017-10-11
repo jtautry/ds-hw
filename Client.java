@@ -4,7 +4,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Scanner;
 
 /**
@@ -81,7 +80,7 @@ public class Client {
 				ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 
 				// Creates the ServerCommand and sends it to the server
-				ServerCommand action = new ServerCommand(new Date(), new String(createActionString(tokens)));
+				ServerCommand action = new ServerCommand(new String(createActionString(tokens)));
 				out.writeObject(action);
 				out.flush();
 
@@ -101,7 +100,7 @@ public class Client {
 				// _listOfServers.remove(serverNumber);
 				continue;
 			} catch (Exception e) {
-				System.err.println(e.getMessage());
+				System.err.println(e);
 			}
 		}
 	}

@@ -8,7 +8,13 @@ public class ServerActionComparator implements Comparator<ServerCommand> {
 
 	@Override
 	public int compare(ServerCommand o1, ServerCommand o2) {
-		return o1.getTimeStamp().compareTo(o2.getTimeStamp());
+		if (o1.getClock().getTimestamp() == o2.getClock().getTimestamp()) {
+			return 0;
+		} else if (o1.getClock().getTimestamp() > o2.getClock().getTimestamp()) {
+			return 1;
+		} else {
+			return -1;
+		}
 	}
 
 }

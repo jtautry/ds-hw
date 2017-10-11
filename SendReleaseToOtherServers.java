@@ -16,13 +16,12 @@ public class SendReleaseToOtherServers implements Runnable {
 	 * @param listOfOtherServers
 	 * @param action
 	 */
-	public SendReleaseToOtherServers(int myID, ArrayList<ServerMetadata> listOfOtherServers) {
+	public SendReleaseToOtherServers(int myID, LamportClock clock, ArrayList<ServerMetadata> listOfOtherServers) {
 		_myID = myID;
 		_listOfOtherServers = listOfOtherServers;
-		_action = new ServerCommand(_myID, "release");
-
+		_action = new ServerCommand("release",new LamportClock(clock.getTimestamp()+1), ServerCommandType.releaseMessage, myID);
+		
 	}
-
 	@Override
 	public void run() {
 		System.out.println("SendReleaseToOtherServers started.");
@@ -53,7 +52,7 @@ public class SendReleaseToOtherServers implements Runnable {
 			}
 		}
 
-		System.out.println("Releases send");
+		System.out.println("Releases sent");
 
 	}
 
