@@ -2,21 +2,22 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
-public class NotifyOtherServers implements Runnable {
+public class SendCommandToOtherServers implements Runnable {
 	private int _myID;
 	private ArrayList<ServerMetadata> _listOfOtherServers = null;
 	private ServerCommand _action;
 
 	/**
-	 * Creates Thread to notify servers in the list of the action
+	 * Creates Thread to send command to other Servers
 	 * 
 	 * @param myID
 	 * @param listOfOtherServers
 	 * @param action
 	 */
-	public NotifyOtherServers(int myID, ArrayList<ServerMetadata> listOfOtherServers, ServerCommand action) {
+	public SendCommandToOtherServers(int myID, ArrayList<ServerMetadata> listOfOtherServers, ServerCommand action) {
 		_myID = myID;
 		_listOfOtherServers = listOfOtherServers;
 		_action = action;
@@ -25,7 +26,7 @@ public class NotifyOtherServers implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("SyncServerThread started.");
+		System.out.println("SendCommandToOtherServers started.");
 		int acknowledgementsFromServer = 1;
 
 		for (int i = 0; i < _listOfOtherServers.size(); i++) {
@@ -33,8 +34,9 @@ public class NotifyOtherServers implements Runnable {
 				try {
 					Socket newSocket = new Socket(_listOfOtherServers.get(i).getIpAddress(),
 							_listOfOtherServers.get(i).getPortAddress());
-					while (!newSocket.isConnected()) {
-					}
+					// TODO: Uncomment before turn in
+					// newSocket.setSoTimeout(100);
+
 					// Send Message to other Servers
 					ObjectOutputStream oos = new ObjectOutputStream(newSocket.getOutputStream());
 					oos.writeObject(_action);
@@ -48,8 +50,14 @@ public class NotifyOtherServers implements Runnable {
 
 					newSocket.close();
 
+				} catch (SocketTimeoutException e) {
+					// TODO: Uncomment this so the connection will move on to the next server if the
+					// connection dies
+					// _listOfServers.remove(serverNumber);
+					continue;
 				} catch (IOException | ClassNotFoundException e) {
-					System.out.println(e);
+					System.err.println(e.getMessage());
+					continue;
 				}
 			}
 		}
@@ -58,39 +66,7 @@ public class NotifyOtherServers implements Runnable {
 		// while(acknowledgementsFromServer!=_listOfOtherServers.size()) {
 		//
 		// }
-		System.out.println("Acknowledgements received "+acknowledgementsFromServer);
+		System.out.println("Acknowledgements received " + acknowledgementsFromServer);
 
 	}
-
-	// @Override
-	// public Integer call() throws Exception {
-	// System.out.println("SyncServerThread started.");
-	// int requests=1;
-	// for (int i = 0; i < _listOfOtherServers.size(); i++) {
-	// if (i != (_myID - 1)) {
-	// try {
-	// Socket newSocket = new Socket(_listOfOtherServers.get(i).getIpAddress(),
-	// _listOfOtherServers.get(i).getPortAddress());
-	// while(!newSocket.isConnected()) {
-	// }
-	// ObjectOutputStream oos = new ObjectOutputStream(newSocket.getOutputStream());
-	// oos.writeObject(_action);
-	// oos.flush();
-	// // receive response
-	//// ObjectInputStream ois = new ObjectInputStream(newSocket.getInputStream());
-	//// ServerAction otherAction = (ServerAction) ois.readObject();
-	//// if(otherAction.getTimeStamp()!=null) {
-	//// requests++;
-	//// }
-	// newSocket.close();
-	//
-	// } catch (IOException e) {
-	// System.out.println(e);
-	// }
-	// }
-	//
-	// }
-	// System.out.println("SyncServerThread stopped.");
-	// return requests;
-	// }
 }

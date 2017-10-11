@@ -32,14 +32,19 @@ public class Server {
 				ServerCommand otherAction = (ServerCommand) ois.readObject();
 
 				// coming from client
-				if (otherAction.getServerId() == 0 && otherAction.getAction() != null) {
+				if (otherAction.getServerId() == 0 && otherAction.getAction() != null
+						&& otherAction.getTimeStamp() != null) {
 					// Set ownership Of the message
 					otherAction.setServerId(_myID);
 					addCommandToQueue(otherAction);
 					// notify other Servers of received Message
-					Thread t = new Thread(new NotifyOtherServers(_myID, _listOfServers, otherAction));
+					Thread t = new Thread(new SendCommandToOtherServers(_myID, _listOfServers, otherAction));
 					t.start();
-					// coming from other server
+				// release message from server after completion of CS
+				} else if (otherAction.getServerId() != 0 && otherAction.getAction() != null
+						&& otherAction.getTimeStamp() == null) {
+					_serverQueue.remove(0);
+				// coming from other server to tell others about command
 				} else {
 					addCommandToQueue(otherAction);
 					// respond to Server with Timestamp
@@ -51,7 +56,9 @@ public class Server {
 
 					sendResponseToClient(socket, response);
 					_serverQueue.remove(0);
-					// TODO remove item from other queues
+
+					Thread t = new Thread(new SendReleaseToOtherServers(_myID, _listOfServers));
+					t.start();
 				}
 				_serverSocket.close();
 			}

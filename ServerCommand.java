@@ -78,6 +78,8 @@ public class ServerCommand implements Serializable {
 	/**
 	 * Creates a ServerCommand from the client input
 	 * 
+	 * this is used when a client is sending a message to the server
+	 * 
 	 * @param timestamp
 	 * @param action
 	 */
@@ -87,7 +89,9 @@ public class ServerCommand implements Serializable {
 	}
 
 	/**
-	 * Creates a ServerCommand from the client input
+	 * Creates a ServerCommand
+	 * 
+	 * this is used when the server notifies other servers of the command
 	 * 
 	 * @param serverId
 	 * @param timestamp
@@ -96,6 +100,19 @@ public class ServerCommand implements Serializable {
 	public ServerCommand(int serverId, Date timestamp, String action) {
 		_serverId = serverId;
 		_timeStamp = timestamp;
+		_action = action;
+	}
+	
+	/**
+	 * Creates a ServerCommand 
+	 * 
+	 * this is used when the server releases other servers
+	 * 
+	 * @param serverId
+	 * @param action
+	 */
+	public ServerCommand(int serverId, String action) {
+		_serverId = serverId;
 		_action = action;
 	}
 
