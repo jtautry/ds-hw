@@ -32,6 +32,10 @@ public class NotifyOtherServers implements Runnable {
 					ServerAction otherAction = (ServerAction) ois.readObject();
 					newSocket.close();
 
+				} catch (ConnectException e) {
+					//this happens when a server is down, shouldn't be an error
+					System.out.println(e);
+
 				} catch (IOException | ClassNotFoundException e) {
 					System.out.println(e);
 				}
