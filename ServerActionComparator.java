@@ -1,9 +1,13 @@
 import java.util.Comparator;
 
-public class ServerActionComparator implements Comparator<ServerAction> {
+/**
+ * Comparator to help sort the server action lists
+ *
+ */
+public class ServerActionComparator implements Comparator<ServerCommand> {
 
 	@Override
-	public int compare(ServerAction o1, ServerAction o2) {
+	public int compare(ServerCommand o1, ServerCommand o2) {
 		return o1.getTimeStamp().compareTo(o2.getTimeStamp());
 	}
 
