@@ -35,13 +35,14 @@ public class Reservation {
 		_person = personName;
 	}
 
-	/*
-	 * public String getStatus() {
+	/**
+	 * USED FOR DEBUGGING
 	 * 
-	 * return _seat + ":" + _person;
-	 * 
-	 * }
+	 * @return String of Reservation
 	 */
+	public String getStatus() {
+		return _seat + ":" + _person;
+	}
 
 	/**
 	 * Creates a seat

@@ -33,27 +33,6 @@ public class Client {
 				runCommand(tokens);
 			} else if (tokens[0].equals("delete") && tokens.length == 2) {
 				runCommand(tokens);
-
-				/*
-				 * } else if (tokens[0].equals("status")) { for (int serverNumber = 0;
-				 * serverNumber < listOfServers.size(); serverNumber++) { try { Socket socket =
-				 * new Socket(listOfServers.get(serverNumber).getIpAddress(),
-				 * listOfServers.get(serverNumber).getPortAddress()); PrintWriter out = new
-				 * PrintWriter(socket.getOutputStream(), true); BufferedReader in = new
-				 * BufferedReader(new InputStreamReader(socket.getInputStream()));
-				 * 
-				 * // send command out.println("status");
-				 * 
-				 * // receive response String line; while ((line = in.readLine()) != null) {
-				 * System.out.println(line); } break; } catch (SocketTimeoutException e) { //
-				 * listOfServers.remove(serverNumber); continue; } catch (Exception e) {
-				 * System.out.println("Something Bad Happened"); } } } else if
-				 * (tokens[0].equals("servers")) { for (int serverNumber = 0; serverNumber <
-				 * listOfServers.size(); serverNumber++) { System.out.println("Server " +
-				 * serverNumber + " is " + listOfServers.get(serverNumber).toString());
-				 * 
-				 * }
-				 */
 			} else {
 				System.out.println("ERROR: No such command");
 			}

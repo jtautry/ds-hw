@@ -132,10 +132,17 @@ public class SeatInventory {
 		return "No reservation found for " + personName;
 
 	}
-
-	/*
-	 * public String getStatus() { String str = "Sync "; for (int i = 0; i <
-	 * _listOfSeats.size(); i++) { str = str + _listOfSeats.get(i).getStatus() +
-	 * "\n"; } return str; }
+	/**
+	 * USED FOR DEBUGGING
+	 * 
+	 * @return String of Inventory
 	 */
+	public String getStatus() {
+		String str = "Sync :";
+		for (int i = 0; i < _listOfSeats.size(); i++) {
+			str = str + _listOfSeats.get(i).getStatus() + ", ";
+		}
+		return str;
+	}
+
 }

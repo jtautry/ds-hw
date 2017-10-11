@@ -16,11 +16,11 @@ public class ServerCommand implements Serializable {
 	/**
 	 * TimeStamp of the Server Command
 	 */
-	private Date _timeStamp;
+	private Date _timeStamp = null;
 	/**
 	 * Action to be performed by the Server
 	 */
-	private String _action = "";
+	private String _action = null;
 	/**
 	 * ID of the Server that owes this Action
 	 */
@@ -102,9 +102,9 @@ public class ServerCommand implements Serializable {
 		_timeStamp = timestamp;
 		_action = action;
 	}
-	
+
 	/**
-	 * Creates a ServerCommand 
+	 * Creates a ServerCommand
 	 * 
 	 * this is used when the server releases other servers
 	 * 
@@ -137,6 +137,14 @@ public class ServerCommand implements Serializable {
 		hash = 53 * hash + (this._action != null ? this._action.hashCode() : 0);
 		hash = 53 * hash + (this._timeStamp != null ? this._timeStamp.hashCode() : 0);
 		return hash;
+	}
+
+	@Override
+	public String toString() {
+		String str = "Timestamp:" + (this._timeStamp != null ? this._timeStamp.toString() : "No TimeStamp");
+		str += "-Action:" + (this._action != null ? this._action.toString() : "No Action");
+		str += "-Server:" + (this._serverId != 0 ? this._serverId : "No Server ID");
+		return str;
 	}
 
 }

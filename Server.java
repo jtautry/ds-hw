@@ -43,19 +43,23 @@ public class Server {
 				// release message from server after completion of CS
 				} else if (otherAction.getServerId() != 0 && otherAction.getAction() != null
 						&& otherAction.getTimeStamp() == null) {
+					System.out.println(new Date().toString()+":Release received from Server "+ otherAction.toString());
 					_serverQueue.remove(0);
 				// coming from other server to tell others about command
 				} else {
+					System.out.println(new Date().toString()+":Command received from Server "+ otherAction.toString());
 					addCommandToQueue(otherAction);
 					// respond to Server with Timestamp
 					sendAcknowledgementToServer(socket);
 				}
 				// TODO count responses from the notify thread before execution
-				if (_serverQueue.get(0).getServerId() == _myID) {
+				if (_serverQueue.size()>0 && _serverQueue.get(0).getServerId() == _myID) {
+					
+					System.out.println(new Date().toString()+":Entering Critical Section for :"+ otherAction.toString());
 					String response = executeCriticalSection(otherAction);
-
 					sendResponseToClient(socket, response);
 					_serverQueue.remove(0);
+					System.out.println(new Date().toString()+":Leaving Critical Section for :"+ otherAction.toString());
 
 					Thread t = new Thread(new SendReleaseToOtherServers(_myID, _listOfServers));
 					t.start();
